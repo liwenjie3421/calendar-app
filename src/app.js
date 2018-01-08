@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import axios from 'axios';
 import 'antd-mobile/dist/antd-mobile.css';
-import { NavBar } from 'antd-mobile';
+import { Modal } from 'antd-mobile';
 
 export default class App extends React.Component {
     constructor() {
@@ -11,7 +11,7 @@ export default class App extends React.Component {
         this.state = {
             date: date.format('YYYY年MM月DD日'),
             time: date.format('HH:mm'),
-            whichDay: date.format('d')
+            model: 1
         };
 
         this.colorMap = {
@@ -35,12 +35,36 @@ export default class App extends React.Component {
             }
             this.setState({
                 date: date.format('YYYY年MM月DD日'),
-                time: date.format('HH:mm'),
-                whichDay: date.format('d')
+                time: date.format('HH:mm')
             });
         }, 900);
     }
 
+    componentDidMount() {
+        setTimeout(() => {
+            document.querySelector('body').ontouchstart = () => {
+                this.start = new Date().getTime();
+            }
+            document.querySelector('body').ontouchend = () => {
+                if (new Date().getTime() - this.start >= 380) {
+                    Modal.operation([
+                        {
+                            text: '查看今天',
+                            onPress: () => this.setState({
+                                model: 1
+                            })
+                        }, {
+                            text: '查看明天',
+                            onPress: () => this.setState({
+                                model: 2
+                            })
+                        }
+                    ])
+                    };
+            }
+        }, 200);
+    }
+    
     getData() {
         const date = moment();
         const monthPicker = date.format('YYYY-MM-01');
@@ -65,7 +89,7 @@ export default class App extends React.Component {
     }
 
     getTips({today, tomorrow}) {
-        const {date, time, whichDay} = this.state;
+        const {time} = this.state;
         const h = time.split(':')[0];
         if (today) {
             const tipsMap = {
@@ -89,8 +113,8 @@ export default class App extends React.Component {
                     switch (true) {
                         case h < 5:
                             return '下午上班，能睡懒觉，晚睡一点没关系（是一点，太晚了打屁股😈）';
-                        case h < 14 && h >= 11:
-                            return '三点出门，还可以玩一会儿😘';
+                        case h < 14:
+                            return '三点出门，还可以睡一会儿😘';
                         case h < 15 && h >= 14:
                             return '快要上班了，赶快出门╭ (′ ▽ `)╯';
                         case h > 23:
@@ -103,8 +127,8 @@ export default class App extends React.Component {
                     switch (true) {
                         case h < 5:
                             return '下午上班，能睡懒觉，晚睡一点没关系（是一点，太晚了打屁股😈）';
-                        case h < 15 && h >= 11:
-                            return '四点出门，还可以玩一会儿😘';
+                        case h < 15:
+                            return '四点出门，还可以睡一会儿😘';
                         case h < 16 && h >= 15:
                             return '快要上班了，赶快出门╭ (′ ▽ `)╯';
                         case h > 23:
@@ -127,7 +151,6 @@ export default class App extends React.Component {
             };
             return tipsMap[today] || '';
         } else if (tomorrow) {
-            const {today: _today} = this.state;
             const tipsMap = {
                 'A早': (()=>{
                     switch (true) {
@@ -154,12 +177,7 @@ export default class App extends React.Component {
                     }
                 })(),
                 'X': (()=>{
-                    switch (true) {
-                        case h > 20:
-                            return '下午上班，能睡懒觉，晚睡一点没关系（是一点，太晚了打屁股😈）';
-                        default:
-                            return '';
-                    }
+                        return '下午上班，能睡懒觉，晚睡一点没关系（是一点，太晚了打屁股😈）';
                 })(),
                 'Y': (()=>{
                     switch (true) {
@@ -179,56 +197,94 @@ export default class App extends React.Component {
     }
 
     render() {
-        const {date, time, whichDay, today, tomorrow} = this.state;
-        const whichDayMap = [
-            '日',
-            '一',
-            '二',
-            '三',
-            '四',
-            '五',
-            '六'
-        ];
+
+        const { today, tomorrow, model} = this.state;
+
+        const styles = {
+            main: {
+                height: '100%',
+                width: '100%',
+                // backgroundColor: this.colorMap[today],
+                position: 'relative'
+            },
+            work: {
+                textAlign: 'center',
+                fontSize: '36px',
+                width: '100%',
+                color: '#fff',
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)'
+            },
+            tips: {
+                fontSize: '16px',
+                textAlign: 'center',
+                marginTop: '10px',
+                lineHeight: '20px'
+            }
+        };
         return (
             <div style={{
                 height: '100%',
                 width: '100%',
-                backgroundColor: this.colorMap[today],
                 position: 'relative'
             }}>
-                <div className="now">
-                <NavBar
-                mode="light"
-                >{
-                    `现在是${date} ${time} 周${whichDayMap[whichDay] || '日'}`
-                }</NavBar>
-                </div>
                 {
-                    today && (
-                        <div style={{
-                            textAlign: 'center',
-                            fontSize: '36px',
-                            width: '100%',
-                            color: '#fff',
-                            position: 'absolute',
-                            left: '50%',
-                            top: '50%',
-                            transform: 'translate(-50%, -50%)'
-                        }}>
+                    (model === 1) && today && (
+                    <div style={{
+                        ...styles.main,
+                        backgroundColor: this.colorMap[today]
+                    }}>
+                        <div style={styles.work}>
                         {
                             `今天是${today}班`
                         }
                         <br />
-                        <p style={{
-                            fontSize: '16px',
-                            textAlign: 'center',
-                            marginTop: '10px'
-                        }}>
+                        <p style={styles.tips}>
                         {
                             `${this.getTips({today})}`
                         }
                         </p>
                         </div>
+                    </div>
+                    )
+                }
+
+                {/* {
+                    (model === 0) && today && (
+                        <div style={styles.work}>
+                        {
+                            `今天是${today}班`
+                        }
+                        <br />
+                        <p style={styles.tips}>
+                        {
+                            `${this.getTips({today})}`
+                        }
+                        </p>
+                        </div>
+                    )
+                } */}
+
+                {
+                    (model === 2) && tomorrow && (
+                    <div style={{
+                        ...styles.main,
+                        backgroundColor: this.colorMap[tomorrow]
+                    }}>
+                        <div style={styles.work}>
+                        {
+                            `明天是${tomorrow}班`
+                        }
+                        <br />
+                        <p style={styles.tips}>
+                        {
+                            `${this.getTips({tomorrow})}`
+                        }
+                        </p>
+                        </div>
+                    </div>
                     )
                 }
             </div>
