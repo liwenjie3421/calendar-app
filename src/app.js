@@ -3,8 +3,8 @@ import moment from 'moment';
 import axios from 'axios';
 import Modal from 'antd-mobile/lib/modal/index';
 import Calendar from 'antd-mobile/lib/calendar/index';
-import 'antd-mobile/lib/modal/style/index';
-import 'antd-mobile/lib/calendar/style/index';
+import 'antd-mobile/lib/modal/style/css';
+import 'antd-mobile/lib/calendar/style/css';
 export default class App extends React.Component {
     constructor() {
         super();
