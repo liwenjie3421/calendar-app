@@ -1,9 +1,10 @@
 import React from 'react';
 import moment from 'moment';
 import axios from 'axios';
-import 'antd-mobile/dist/antd-mobile.css';
-import { Modal, Calendar } from 'antd-mobile';
-
+import Modal from 'antd-mobile/lib/modal/index';
+import Calendar from 'antd-mobile/lib/calendar/index';
+import 'antd-mobile/lib/modal/style/index';
+import 'antd-mobile/lib/calendar/style/index';
 export default class App extends React.Component {
     constructor() {
         super();
