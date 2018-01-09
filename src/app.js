@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import axios from 'axios';
 import 'antd-mobile/dist/antd-mobile.css';
-import { Modal } from 'antd-mobile';
+import { Modal, Calendar } from 'antd-mobile';
 
 export default class App extends React.Component {
     constructor() {
@@ -11,6 +11,7 @@ export default class App extends React.Component {
         this.state = {
             date: date.format('YYYY年MM月DD日'),
             time: date.format('HH:mm'),
+            dataArr: [],
             model: 1
         };
 
@@ -41,26 +42,36 @@ export default class App extends React.Component {
     }
 
     componentDidMount() {
+        let locked = false;
         setTimeout(() => {
             document.querySelector('body').ontouchstart = () => {
                 this.start = new Date().getTime();
             }
             document.querySelector('body').ontouchend = () => {
-                if (new Date().getTime() - this.start >= 380) {
+                if (new Date().getTime() - this.start >= 380 && !locked) {
+                    locked = true;
                     Modal.operation([
                         {
                             text: '查看今天',
-                            onPress: () => this.setState({
-                                model: 1
-                            })
+                            onPress: () => {
+                                this.setState({model: 1});
+                                locked = false;
+                            }
                         }, {
                             text: '查看明天',
-                            onPress: () => this.setState({
-                                model: 2
-                            })
+                            onPress: () => {
+                                this.setState({model: 2});
+                                locked = false;
+                            }
+                        }, {
+                            text: '查看所有',
+                            onPress: () => {
+                                this.setState({model: -1});
+                                locked = false;
+                            }
                         }
                     ])
-                    };
+                };
             }
         }, 200);
     }
@@ -77,6 +88,7 @@ export default class App extends React.Component {
                 if (status === 200 && data && data.content) {
                     const dataArr = data.content.split(',');
                     this.setState({
+                        dataArr,
                         today: dataArr[index],
                         tomorrow: dataArr[index + 1]
                     });
@@ -84,7 +96,6 @@ export default class App extends React.Component {
                 } else {
                     console.log(`失败： ${data.error}`);
                 }
-                console.log(v)
             });
     }
 
@@ -198,8 +209,7 @@ export default class App extends React.Component {
 
     render() {
 
-        const { today, tomorrow, model} = this.state;
-
+        const { today, tomorrow, model, dataArr} = this.state;
         const styles = {
             main: {
                 height: '100%',
@@ -250,23 +260,6 @@ export default class App extends React.Component {
                     </div>
                     )
                 }
-
-                {/* {
-                    (model === 0) && today && (
-                        <div style={styles.work}>
-                        {
-                            `今天是${today}班`
-                        }
-                        <br />
-                        <p style={styles.tips}>
-                        {
-                            `${this.getTips({today})}`
-                        }
-                        </p>
-                        </div>
-                    )
-                } */}
-
                 {
                     (model === 2) && tomorrow && (
                     <div style={{
@@ -285,6 +278,23 @@ export default class App extends React.Component {
                         </p>
                         </div>
                     </div>
+                    )
+                }
+                {
+                    (model === -1) && dataArr && dataArr.length && (
+                        <div>
+                            <Calendar
+                                onCancel={()=>this.setState({model: 1})}
+                                visible={true}
+                                // onConfirm={this.onConfirm}
+                                // onSelectHasDisableDate={this.onSelectHasDisableDate}
+                                getDateExtra={(date) => {return { info: dataArr[date.getDate() - 1] }}}
+                                defaultDate={new Date()}
+                                type='one'
+                                minDate={new Date(+new Date())}
+                                maxDate={new Date(+new Date())}
+                                />
+                        </div>
                     )
                 }
             </div>
