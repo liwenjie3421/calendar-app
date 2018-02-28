@@ -3,8 +3,13 @@ import moment from 'moment';
 import axios from 'axios';
 import Modal from 'antd-mobile/lib/modal/index';
 import Calendar from 'antd-mobile/lib/calendar/index';
+import Swiper from 'swiper';
 import 'antd-mobile/lib/modal/style/css';
 import 'antd-mobile/lib/calendar/style/css';
+import 'swiper/dist/css/swiper.min.css';
+
+import {domain} from './config';
+
 export default class App extends React.Component {
     constructor() {
         super();
@@ -13,7 +18,7 @@ export default class App extends React.Component {
             date: date.format('YYYY年MM月DD日'),
             time: date.format('HH:mm'),
             dataArr: [],
-            model: 1
+            nextDataArr: []
         };
 
         this.colorMap = {
@@ -22,7 +27,9 @@ export default class App extends React.Component {
             'D': '#00CCFF',
             'X': '#FF6600',
             'Y': '#CCCCCC',
-            '休': '#FFB6C1'
+            '休': '#FFB6C1',
+            'C': '#00CCFF',
+            'E': '#999999'
         };
     }
 
@@ -43,61 +50,60 @@ export default class App extends React.Component {
     }
 
     componentDidMount() {
-        let locked = false;
         setTimeout(() => {
-            document.querySelector('body').ontouchstart = () => {
-                this.start = new Date().getTime();
-            }
-            document.querySelector('body').ontouchend = () => {
-                if (new Date().getTime() - this.start >= 380 && !locked) {
-                    locked = true;
-                    Modal.operation([
-                        {
-                            text: '查看今天',
-                            onPress: () => {
-                                this.setState({model: 1});
-                                locked = false;
-                            }
-                        }, {
-                            text: '查看明天',
-                            onPress: () => {
-                                this.setState({model: 2});
-                                locked = false;
-                            }
-                        }, {
-                            text: '查看所有',
-                            onPress: () => {
-                                this.setState({model: -1});
-                                locked = false;
-                            }
-                        }
-                    ])
-                };
-            }
-        }, 200);
+            new Swiper('.swiper-container', {
+                    direction: 'horizontal',
+                    loop: false
+                  });
+        }, 1200);
     }
     
-    getData() {
+    async getData() {
         const date = moment();
         const monthPicker = date.format('YYYY-MM-01');
-        const index = date.format('DD') - 1;
-        axios.post('https://xn--2brq06crqr.xn--6qq986b3xl/api/calendarInfo', {
-            monthPicker,
-            type: 'get'
-        }).then(v => {
-                const {status, data} = v;
-                if (status === 200 && data && data.content) {
-                    const dataArr = data.content.split(',');
-                    this.setState({
-                        dataArr,
-                        today: dataArr[index],
-                        tomorrow: dataArr[index + 1]
-                    });
-                    ;
-                } else {
-                    console.log(`失败： ${data.error}`);
-                }
+        const nextMonthPicker = date.add(1, 'month').format('YYYY-MM-01');
+        const daysNum = date.daysInMonth();
+        
+        const allData = await Promise.all(
+            [await axios.post(`${domain}/calendarInfo`, {
+                monthPicker,
+                type: 'get'
+            }),
+            await axios.post(`${domain}/calendarInfo`, {
+                monthPicker: nextMonthPicker,
+                type: 'get'
+            })]
+        );
+        const {status, data} = allData[0];
+        if (status === 200 && data && data.content) {
+            const {info, tutorMap} = data.content;
+            const dataArr = info.map(item => {
+                return {
+                    tutor: tutorMap[item.color],
+                    item: item.item
+                };
             });
+            this.setState({
+                dataArr
+            });
+        } else {
+            console.log(`失败： ${data.error}`);
+        }
+        const {status: nextStatus, data: nextData} = allData[1];
+        if (nextStatus === 200 && nextData && nextData.content) {
+            const {info, tutorMap} = nextData.content;
+            const nextDataArr = info.map(item => {
+                return {
+                    tutor: tutorMap[item.color],
+                    item: item.item
+                };
+            });
+            this.setState({
+                nextDataArr
+            });
+        } else {
+            console.log(`失败： ${nextData.error}`);
+        }
     }
 
     getTips({today, tomorrow}) {
@@ -209,8 +215,17 @@ export default class App extends React.Component {
     }
 
     render() {
-
-        const { today, tomorrow, model, dataArr} = this.state;
+        const date = moment();
+        const index = date.format('DD') - 1;
+        const {dataArr, nextDataArr} = this.state;
+        const today = dataArr[index];
+        const daysNum = date.daysInMonth();
+        let tomorrow = {};
+        if (daysNum === index + 1) { //月末
+            tomorrow = nextDataArr[0];
+        } else {
+            tomorrow = dataArr[index + 1];
+        }
         const styles = {
             main: {
                 height: '100%',
@@ -236,52 +251,54 @@ export default class App extends React.Component {
             }
         };
         return (
-            <div style={{
+            <div className="swiper-container" style={{
                 height: '100%',
                 width: '100%',
                 position: 'relative'
             }}>
-                {
-                    (model === 1) && today && (
-                    <div style={{
-                        ...styles.main,
-                        backgroundColor: this.colorMap[today]
-                    }}>
-                        <div style={styles.work}>
-                        {
-                            `今天是${today}班`
-                        }
-                        <br />
-                        <p style={styles.tips}>
-                        {
-                            `${this.getTips({today})}`
-                        }
-                        </p>
-                        </div>
-                    </div>
-                    )
-                }
-                {
-                    (model === 2) && tomorrow && (
-                    <div style={{
-                        ...styles.main,
-                        backgroundColor: this.colorMap[tomorrow]
-                    }}>
-                        <div style={styles.work}>
-                        {
-                            `明天是${tomorrow}班`
-                        }
-                        <br />
-                        <p style={styles.tips}>
-                        {
-                            `${this.getTips({tomorrow})}`
-                        }
-                        </p>
-                        </div>
-                    </div>
-                    )
-                }
-                {
+                <div className="swiper-wrapper">
+                    {
+                        today && (
+                            <div className="swiper-slide" style={{
+                                ...styles.main,
+                                backgroundColor: this.colorMap[today.item]
+                            }}>
+                                <div style={styles.work}>
+                                {
+                                    `今天是${today.item}班`
+                                }
+                                <br />
+                                <p style={styles.tips}>
+                                {
+                                    `${this.getTips({today: today.item})}`
+                                }
+                                </p>
+                                </div>
+                            </div>
+                            )
+                    }
+                    {
+                        tomorrow && (
+                            <div className="swiper-slide" style={{
+                                ...styles.main,
+                                backgroundColor: this.colorMap[tomorrow.item]
+                            }}>
+                                <div style={styles.work}>
+                                {
+                                    `明天是${tomorrow.item}班`
+                                }
+                                <br />
+                                <p style={styles.tips}>
+                                {
+                                    `${this.getTips({tomorrow: tomorrow.item})}`
+                                }
+                                </p>
+                                </div>
+                            </div>
+                            )
+                    }
+                </div>
+                {/* {
                     (model === -1) && dataArr && dataArr.length && (
                         <div>
                             <Calendar
@@ -297,7 +314,7 @@ export default class App extends React.Component {
                                 />
                         </div>
                     )
-                }
+                } */}
             </div>
         );
     }
