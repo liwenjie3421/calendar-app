@@ -267,6 +267,13 @@ export default class App extends React.Component {
                                 {
                                     `今天是${today.item}班`
                                 }
+                                    <br/>
+                                <div style={{fontSize: '16px'}}>
+                                    {
+
+                                        `老师是${today.tutor}`
+                                    }
+                                </div>
                                 <br />
                                 <p style={styles.tips}>
                                 {
@@ -287,6 +294,12 @@ export default class App extends React.Component {
                                 {
                                     `明天是${tomorrow.item}班`
                                 }
+                                    <br/>
+                                <div style={{fontSize: '16px'}}>
+                                    {
+                                    `老师是${today.tutor}`
+                                    }
+                                </div>
                                 <br />
                                 <p style={styles.tips}>
                                 {
